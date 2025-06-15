@@ -11,6 +11,7 @@ function login() {
 
 const socket = new WebSocket('wss://chatingapp-4lq1.onrender.com');
   socket.onopen = () => {
+    console.log("Connected to WebSocket server");
     socket.send(JSON.stringify({ type: 'login', username }));
   };
 
