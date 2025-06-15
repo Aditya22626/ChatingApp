@@ -1,49 +1,61 @@
-// Prompt for username
-let username = "";
-while (!username) {
-  username = prompt("Enter your name:").trim();
-}
-
-// Connect to your WebSocket server
-const socket = new WebSocket("wss://YOUR-BACKEND.onrender.com");
-
 // DOM Elements
+const loginScreen = document.getElementById("login-screen");
+const chatScreen = document.getElementById("chat-screen");
+const joinBtn = document.getElementById("join-btn");
+const usernameInput = document.getElementById("username-input");
+
 const chatBox = document.getElementById("chat-box");
 const messageForm = document.getElementById("message-form");
 const messageInput = document.getElementById("message-input");
 
-// Handle connection open
-socket.onopen = () => {
-  console.log("✅ Connected to WebSocket server");
-  appendSystemMessage("✅ Connected to chat");
-  messageInput.focus();
-};
+let socket;
+let username = "";
 
-// Handle incoming messages
-socket.onmessage = (event) => {
-  try {
-    const msg = JSON.parse(event.data);
-    if (msg.type === "message") {
-      appendMessage(msg.from, msg.text);
-    } else if (msg.type === "system") {
-      appendSystemMessage(msg.text);
-    }
-  } catch (err) {
-    console.error("Error parsing message:", err);
+// Join button logic
+joinBtn.addEventListener("click", () => {
+  const input = usernameInput.value.trim();
+  if (input) {
+    username = input;
+    loginScreen.classList.add("hidden");
+    chatScreen.classList.remove("hidden");
+    initWebSocket();
   }
-};
+});
 
-// Handle errors
-socket.onerror = (err) => {
-  console.error("❌ WebSocket error:", err);
-  appendSystemMessage("❌ Connection error.");
-};
+// Connect to WebSocket
+function initWebSocket() {
+  socket = new WebSocket("wss://chatingapp-1-6x79.onrender.com"); // <-- Replace with your backend URL
 
-// Send messages
+  socket.onopen = () => {
+    console.log("✅ Connected to WebSocket server");
+    appendSystemMessage("✅ Connected to chat");
+    messageInput.focus();
+  };
+
+  socket.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "message") {
+        appendMessage(msg.from, msg.text);
+      } else if (msg.type === "system") {
+        appendSystemMessage(msg.text);
+      }
+    } catch (err) {
+      console.error("Error parsing message:", err);
+    }
+  };
+
+  socket.onerror = (err) => {
+    console.error("❌ WebSocket error:", err);
+    appendSystemMessage("❌ Connection error.");
+  };
+}
+
+// Handle message sending
 messageForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const text = messageInput.value.trim();
-  if (text && socket.readyState === WebSocket.OPEN) {
+  if (text && socket && socket.readyState === WebSocket.OPEN) {
     socket.send(JSON.stringify({
       type: "message",
       from: username,
@@ -62,7 +74,7 @@ function appendMessage(from, text) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Append system messages (like errors or status)
+// Append system messages (like join/leave or error)
 function appendSystemMessage(text) {
   const msgElem = document.createElement("div");
   msgElem.className = "system-message";
