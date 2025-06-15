@@ -45,3 +45,18 @@ app.use(express.static(path.join(__dirname, '../client')));
 server.listen(process.env.PORT || 10000, '0.0.0.0', () => {
   console.log(`Server listening on port ${process.env.PORT || 10000}`);
 });
+
+wss.on('connection', (ws) => {
+  ws.on('message', (data) => {
+    const msg = JSON.parse(data);
+
+    if (msg.type === 'message') {
+      // Broadcast message to all clients
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ type: 'message', from: msg.from, text: msg.text }));
+        }
+      });
+    }
+  });
+});
