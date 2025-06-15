@@ -1,5 +1,5 @@
 const username = prompt("Enter your name:");
-const socket = new WebSocket("wss://YOUR-BACKEND.onrender.com");
+const socket = new WebSocket("wss://chatingapp-1-6x79.onrender.com");
 
 // DOM elements
 const chatBox = document.getElementById("chat-box");
