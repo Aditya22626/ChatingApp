@@ -1,62 +1,43 @@
+const username = prompt("Enter your name:");
+const socket = new WebSocket("wss://YOUR-BACKEND.onrender.com");
 
-let socket;
-let username;
+// DOM elements
+const chatBox = document.getElementById("chat-box");
+const messageForm = document.getElementById("message-form");
+const messageInput = document.getElementById("message-input");
 
-function login() {
-  username = document.getElementById('username').value;
-  if (!username) return alert('Please enter a username');
+socket.onopen = () => {
+  console.log("✅ Connected to WebSocket server");
+};
 
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('chat-screen').classList.remove('hidden');
+socket.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.type === "message") {
+    appendMessage(msg.from, msg.text);
+  }
+};
 
-const socket = new WebSocket('wss://chatingapp-4lq1.onrender.com');
-  socket.onopen = () => {
-    console.log("Connected to WebSocket server");
-    socket.send(JSON.stringify({ type: 'login', username }));
-  };
+socket.onerror = (err) => {
+  console.error("❌ WebSocket error:", err);
+};
 
-  socket.onmessage = (event) => {
-    const msg = JSON.parse(event.data);
-    switch (msg.type) {
-      case 'userList':
-        updateUserList(msg.users);
-        break;
-      case 'message':
-        addMessage(msg.from, msg.text);
-        break;
-    }
-  };
+messageForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = messageInput.value.trim();
+  if (text) {
+    socket.send(JSON.stringify({
+      type: "message",
+      from: username,
+      text: text
+    }));
+    messageInput.value = "";
+  }
+});
+
+function appendMessage(from, text) {
+  const msgElem = document.createElement("div");
+  msgElem.className = "message";
+  msgElem.innerHTML = `<strong>${from}:</strong> ${text}`;
+  chatBox.appendChild(msgElem);
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
-
-function sendMessage() {
-  const input = document.getElementById('messageInput');
-  const text = input.value;
-  if (!text) return;
-
-  socket.send(JSON.stringify({ type: 'message', from: username, text }));
-  input.value = '';
-}
-
-function addMessage(from, text) {
-  const div = document.createElement('div');
-  div.textContent = `${from}: ${text}`;
-  document.getElementById('chat-window').appendChild(div);
-}
-
-function updateUserList(users) {
-  const list = document.getElementById('user-list');
-  list.innerHTML = '<b>Online:</b><br>' + users.map(u => `<div>${u}</div>`).join('');
-}
-const express = require('express');
-const http = require('http');
-const WebSocket = require('ws');
-
-const app = express();
-// your app.use, endpoints, static file serve...
-
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
-
-wss.on('connection', ws => { /* ... */ });
-
-server.listen(process.env.PORT || 10000, '0.0.0.0');
