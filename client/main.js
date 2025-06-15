@@ -9,7 +9,7 @@ function login() {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('chat-screen').classList.remove('hidden');
 
-  socket = new WebSocket('wss://your-app-name.onrender.com');
+const socket = new WebSocket('wss://chatingapp-4lq1.onrender.com
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: 'login', username }));
   };
