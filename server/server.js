@@ -7,56 +7,34 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-const users = new Map();
+// Optional: Serve static files if frontend is also hosted here
+app.use(express.static(path.join(__dirname, '../client')));
 
 wss.on('connection', (ws) => {
+  console.log("✅ Client connected");
+
   ws.on('message', (data) => {
     const msg = JSON.parse(data);
+    console.log("📩 Message received:", msg);
 
-    switch (msg.type) {
-      case 'login':
-        users.set(ws, msg.username);
-        broadcast(JSON.stringify({ type: 'userList', users: Array.from(users.values()) }));
-        break;
-      case 'message':
-        broadcast(JSON.stringify({ type: 'message', from: msg.from, text: msg.text }));
-        break;
-    }
+    // Broadcast to all other clients
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: "message",
+          from: msg.from,
+          text: msg.text
+        }));
+      }
+    });
   });
 
   ws.on('close', () => {
-    users.delete(ws);
-    broadcast(JSON.stringify({ type: 'userList', users: Array.from(users.values()) }));
+    console.log("❌ Client disconnected");
   });
 });
 
-function broadcast(message) {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
-    }
-  });
-}
-
-// Serve frontend files
-app.use(express.static(path.join(__dirname, '../client')));
-
-// Start the server
-server.listen(process.env.PORT || 10000, '0.0.0.0', () => {
-  console.log(`Server listening on port ${process.env.PORT || 10000}`);
-});
-
-wss.on('connection', (ws) => {
-  ws.on('message', (data) => {
-    const msg = JSON.parse(data);
-
-    if (msg.type === 'message') {
-      // Broadcast message to all clients
-      wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: 'message', from: msg.from, text: msg.text }));
-        }
-      });
-    }
-  });
+const PORT = process.env.PORT || 10000;
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 WebSocket server running on port ${PORT}`);
 });
